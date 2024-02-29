@@ -1,532 +1,316 @@
-if not game:IsLoaded() then game.Loaded:Wait() end
-local options={
-    MaliciousNamecalls={
-        Enabled=true,
-        ShowNamecall=true
-    },
-    ChatBan={
-        Enabled=true,
-        Slash=true,
-	NewChat=true
-    },
-    PetSim={
-        Enabled=false,
-        ShowUser=false,
-        Bank=false,
-        Mail=false
-    },
-    PetSim99=false,
-    MiningSim=false,
-    AntiLog={
-        Enabled=true,
-        ShowInfo=true,
-        ShowDestination=true,
-        Payback=true
-    },
-    AutoJoin={
-        Enabled=true,
-        ShowServer=true
-    },
-    BeeSwarm=false,
-    Require=true,
-    AntiKick=true,
-    BasicAntiCheatBypass=true,
-    MemoryDetections=true,
-    GUIDetection=true,
-    GroupBypass=true,
-    ClearTrace=true,
-    Error=true,
-    Message=true,
-    AntiIdle=true,
-    AntiApi={
-	Enabled=true,
-	ShowEndpoint=true
-    },
-    Output=warn --Change to your prefered output option (print,warn,printconsole,rconsoleprint,rconsolewarn,etc)
-}
-local Guardian={
-    SetAll=function(a)
-        for i, v in next,options do
-            if typeof(v)=="table" then
-                for i2 in next,v do
-                    options[i][i2]=a
-                end
-            else
-                options[i]=a
-            end
-        end
-    end
-}
-game:GetService("StarterGui"):SetCore("SendNotification",{
-    Title="Guardian has been activated",
-    Text="Guardian is now protecting you in the background",
-    Button1="Okay!",
-    Duration=8
-})
-game:GetService("StarterGui"):SetCore("SendNotification",{
-    Title="MADE BY:",
-    Text="galactichypernova",
-    Button1="Okay!",
-    Duration=8
-})
-if not hookmetamethod or not hookfunction then
-    task.spawn(function()error("Your executor does not support a core function needed for this script. Expect detections and poor security")end)
-end
-if not getproperties then
-    task.spawn(function()error("Your executor does not support getproperties, so the basic anti cheat bypass sadly won't work for you. However, everything else should.")end)
-end
-local hrequest,execlosure=
-{
-    (typeof(syn)=='table'and syn.request),
-    (typeof(http)=='table'and http.request),
-    (typeof(fluxus)=='table'and fluxus.request),
-    request,
-    http_request~=request and http_request, 
-    HttpPost,
-    httpGetAsync,
-    (typeof(syn_backup)=='table' and syn_backup.request)
-},is_synapse_function or isexecutorclosure or iskrnlclosure or issentinelclosure or is_protosmasher_closure or is_sirhurt_closure or iselectronfunction or checkclosure
-local savedProps={}
-local cGame=cloneref(game)
-local Players=cGame:GetService("Players")
-local LocalPlayer=Players.LocalPlayer
-local Char=(LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait())
-local rd=math.random
-local strFind=clonefunction(string.find)
-local strMatch=clonefunction(string.match)
-local StarterGui,Stats,Content=cGame:GetService("StarterGui"),cGame:GetService("Stats"),cGame:GetService("ContentProvider")
-local tr,hiv,bank=cGame.PlaceId==9551640993 and cGame:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("ConfirmTrade") or nil,cGame.PlaceId==1537690962 and cGame:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("ConstructHiveCellFromEgg") or nil--[[game.PlaceId==6284583030 and workspace:WaitForChild("__THINGS"):WaitForChild("__REMOTES"):WaitForChild("invite to bank")]]
-local bank99 = cGame.PlaceId == 8737899170 and cGame.ReplicatedStorage.Network["Mailbox: Send"] or nil
-local ChatBar,ChatScript,SayMessageRequest, ChatMain, MessagePostedEvent
-if cGame:GetService("TextChatService").ChatVersion == Enum.ChatVersion.LegacyChatService then
-    ChatBar = LocalPlayer.PlayerGui:WaitForChild("Chat"):WaitForChild("Frame").ChatBarParentFrame.Frame.BoxFrame.Frame.ChatBar
-    ChatScript = LocalPlayer.PlayerScripts:WaitForChild("ChatScript")
-    SayMessageRequest = cGame:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest
-    ChatMain=ChatScript:WaitForChild("ChatMain")
-	for _, Event in next, debug.getupvalues(require(ChatMain).MessagePosted.fire) do
-	    if typeof(Event) == "Instance" then
-	        MessagePostedEvent = Event
-	    end
-	end
-
-else
-	ChatScript = cGame.CoreGui.RobloxGui.Modules.Server.ClientChat.ChatScript
-end
-local namecall={
-    ["BrowserService"]={
-        ["OpenBrowserWindow"]=1,
-        ["ExecuteJavaScript"]=2,
-	["SendCommand"]=3,
-	["OpenNativeOverlay"]=4,
-	["CloseBrowserWindow"]=5,
-	["OpenWeChatAuthWindow"]=6,
-	["CopyAuthCookieFromBrowserToEngine"]=nil,
-	["ReturnToJavaScript"]=nil,
-	["EmitHybridEvent"]=nil
-    },
-    ["MarketplaceService"]={
-        ["PerformPurchase"]=nil,
-	["PerformPurchaseV2"]=nil,
-        ["GetRobuxBalance"]=0,
-	["PromptGamePassPurchase"]=nil,
-	["PromptPurchase"]=nil,
-	["PromptBundlePurchase"]=nil,
-	["PromptProductPurchase"]=nil,
-	["PromptSubscriptionPurchase"]=nil,
-        ["PromptThirdPartyPurchase"]=nil,
-        ["PromptRobloxPurchase"]=nil,
-        ["PromptNativePurchaseWithLocalPlayer"]=nil,
-        ["PromptNativePurchase"]=nil,
-        ["PromptCollectiblesPurchase"]=nil,
-        ["PrepareCollectiblesPurchase"]=nil,
-        ["ReportAssetSale"]=nil
-    },
-    ["MessageBusService"]={
-        ["Publish"]=1,
-        ["GetMessageId"]="",
-	["Call"]=3,
-	["MakeRequest"]=nil,
-	["Subscribe"]=nil
-    },
-    ["HttpService"]={
-        ["RequestInternal"]=1,
-	["GetSecret"]=nil
-    },
-    ["GuiService"]={
-        ["OpenBrowserWindow"]=1,
-	["OpenNativeOverlay"]=2,
-	["SetPurchasePromptIsShown"]=3
-    },
-    ["DataModel"]={
-        ["OpenVideosFolder"]=1,
-        ["OpenScreenshotsFolder"]=2,
-	["HttpGetAsync"]="",
-	["HttpPostAsync"]=""
-    },
-    ["RbxAnalyticsService"]={
-        ["GetClientId"]=1
-    },
-    ["Players"]={
-        ["ReportAbuse"]=1
-    },
-    ["HttpRbxApiService"]={
-        ["GetAsync"]=1,
-	["GetAsyncFullUrl"]=2,
-	["GetDocumentationUrl"]=3,
-	["PostAsync"]=4,
-	["PostAsyncFullUrl"]=5,
-	["RequestAsync"]=6,
-	["RequestLimitedAsync"]=7
-    },
-    ["OpenCloudService"]={
-	["HttpRequestAsync"]={},
-	["InvokeAsync"]={}
-    },
-    ["ScriptContext"]={
-	["AddCoreScriptLocal"]=nil
-    },
-    ["VideoCaptureService"]={
-        ["GetCameraDevices"]={}
-    },
-    ["CaptureService"]={
-	["DeleteCapture"]=nil,
-	["PromptSaveCapturesToGallery"]=nil,
-	["PromptShareCapture"]=nil,
-	["RetrieveCaptures"]={},
-	["SaveCaptureToExternalStorage"]=nil,
-	["SaveScreenshotCapture"]=nil
-    },
-    ["SafetyService"]={
-    	["TakeScreenshot"]=0
-    },
-    ["LoginService"]={
-	["PromptLogin"]=nil,
-	["Logout"]=nil
-    },
-    ["PermissionsService"]={
-	["SetPermissions"]=nil
+local RoTotal = {
+["HttpPost"] = {
+ ["Allowed"] = false,
+ ["WhitelistedURLs"] = {},
+ ["BlacklistedURLs"] = {"repl","http://"}
+},
+["HttpGet"] = {
+    ["Allowed"] = false,
+    ["BlacklistedURLs"] = {
+        "http://",
+        "repl"
+     }, -- Keep the http:// as its most replits and projects that steal your information that begin with http://
+    ["WhitelistedURLs"] = {
+        "MobileKeyboard",
+        "https://scriptblox.com",
+        "https://raw.githubuserconcent.com",
+        "https://github.com"
+    -- Add URLs in this if you want to turn HttpGet off but you want to loadstring something.
     }
+},
+["MarketplaceService"] = {
+   ["Robux"] = {
+       ["GetRobuxBalance"] = false, -- Setting this to false prevents scripts from being able to use this method to check your robux balance, This method is automatically disabled on delta.
+       ["PromptPurchases"] = false, -- Setting this to false prevents scripts from using robux stealing methods, This also is automatically disabled on delta.
+       ["PerformPurchases"] = false -- automatically disabled on delta but better to keep it set to false.
+   },
+   ["ShowCreators"] = true -- When this option is on, if a scammer tries to prompt a purchase it will show their username and user id.
+},
+["Chat"] = {
+    ["SayMessageRequest"] = {
+      ["Allowed"] = false,
+      ["BlacklistedWords"] = {"fuck", "shit", "nigger", "ass", "raped"} -- If you chose to enable SayMessageRequest blacklist some common swear words to prevent yourself from getting chat banned.
+    },
+    ["SendAsync"] = {
+       ["Allowed"] = false, -- SendAsync is a method that sends messages in the new TextChatService chat, Enable this if you think the script you're executing is safe.
+       ["BlacklistedWords"] = {"fuck", "shit", "nigger", "ass", "raped"} -- Enter in some words in case you want to allow this, especially swear words.
+    }
+},
+["BasicAnticheat"] = {
+    ["Bypass"] = true,
+    ["DestroyWhenCalled"] = true -- Whenever an anticheat calls something such as PreloadAsync, if set to true this will delete the client anticheat 
 }
-local c
-local old1,old2,old3,old4,old5,old8,old9,old10,old11,old12,old13,old14,old15,old16
-if hookfunction then
-	old5=hookfunction(getrenv().gcinfo,function(...)
-		return options.MemoryDetections and rd(1500,2500) or old5(...)
-	end)
-	if not is_sirhurt_closure then
-		for i,v in next,namecall do
-			for i2,v2 in next,v do
-				pcall(function()
-					local old7
-					old7=hookfunction(i=="DataModel" and cGame[i2] or cGame[i][i2],function(...)
-					    if options.MaliciousNamecalls.Enabled then
-	                        options.Output(("Malicious function%s attempted execution. Attempt denied."):format(options.MaliciousNamecalls.ShowNamecall and " game."..(i~="DataModeL"and i.."."..i2) or i2 or "")) 
-	                        return not checkcaller() and old7(...)or nil
-	                    end
-	                    return old7(...)
-					end)
-				end)
-			end
-		end
-	end
-	old13=hookfunction(Instance.new("BindableEvent").Fire,function(...)
-		return not options.ChatBan.Enabled and old13(...) or self==MessagePostedEvent and options.Output("MessagePosted usage was attempted. Attempt denied.") or old13(...)
-	end)
-	if ChatBar then
-		old12=hookfunction(ChatBar.CaptureFocus,function(...)
-			if options.ChatBan.Enabled and options.ChatBan.Slash then
-				options.Output("Chat focus capture as local player was attempted. Attempt denied.")
-				if getcallingscript()~=ChatScript then
-					if not c then
-						StarterGui:SetCore("SendNotification",{
-							Title="WARNING!",
-							Text="There is an attempt to force you to chat in game."..getcallingscript():GetFullName(),
-							Button1="Okay!",
-							Duration=15
-						})
-						StarterGui:SetCore("SendNotification",{
-							Title="What to do",
-							Text="If it is due to a script, rejoin and do not execute it again. Otherwise, go there (through dex) and disable/delete it.",
-							Button1="Okay!",
-							Duration=15
-						})
-						if getcallingscript() then
-						setclipboard(getcallingscript():GetFullName())
-							StarterGui:SetCore("SendNotification",{
-								Title="Copied to clipboard",
-								Text="The path has also been copied to clipboard so you won't lose it in case this warning is gone too fast.",
-								Button1="Okay!",
-								Duration=15
-							})
-						end
-						c="e"
-					end
-				end
-				return
-			end
-			return old12(...)
-		end)
-	end
-	old8=hookfunction(Content.PreloadAsync,function(...)
-		local args={...}
-		return options.GUIDetection and (args[1]==Content and typeof(args[2])=="table" and options.Output("GUI detection attempted. Attempt denied.")) or old8(...) 
-	end)
-	old9=hookfunction(Stats.GetTotalMemoryUsageMb,function(...)
-		local args={...}
-		return options.MemoryDetections and (args[1]==Stats and rd(400,550)) or old9(...)
-	end)
-	old10=hookfunction(cGame.Players.LocalPlayer.Kick,function(...)
-		local args={...}
-		return options.AntiKick and (args[1]==LocalPlayer and options.Output("Attempt to kick player denied.")) or old10(...) 
-	end)
-	local oldd,oldd2
-	oldd=hookfunction(Instance.new("RemoteEvent").FireServer,newcclosure(function(self,...)
-		if options.ChatBan.Enabled and self==SayMessageRequest and getcallingscript()~=ChatMain then
-			return options.Output("SayMessageRequest remote event attempted to fire. Attempt denied.")
-		end
-		if checkcaller() then
-			if cGame.PlaceId==9551640993 and options.MiningSim and self==tr then
-				return options.Output("Script attempted to confirm a potentially rigged/scam trade. Attempt denied.")
-			end
-		end
-		return oldd(self,...)
-	end))
-	if cGame.GameId==2316994223 then
-    	local oldPet
-    	oldPet=hookfunction(require(cGame:GetService("ReplicatedStorage").Library.Client.Network).Invoke,function(self,...)
-    	    if options.PetSim.Enabled and checkcaller() then
-    	        local args={...}
-                if self=="Invite To Bank" and options.PetSim.Bank then
-                    for i,v in next,args do print(i,v)end
-        			task.spawn(function()
-        				options.Output(("Script attempted to give user%saccess to your bank. Attempt denied."):format(options.PetSim.ShowUser and " named ".. Players:GetNameFromUserIdAsync(args[2]).." (ID: "..args[2]..") " or " "))
-        			end)
-        			return
-                end
-                if self=="Send Mail" and options.PetSim.Mail then
-                    for i,v in next,args do print(i,v)end
-                    task.spawn(function()
-                        options.Output(("Script attempted to send mail to a user%s. Attempt denied."):format(options.PetSim.ShowUser and " named ".. args[1]["Recipient"].." (ID: "..Players:GetUserIdFromNameAsync(args[1]["Recipient"])..") " or ""))
-                    end)
-                    return
-                end
-    	    end
-            return oldPet(self,...)
-        end)
-    	    end
-	oldd2=hookfunction(Instance.new("RemoteFunction").InvokeServer,newcclosure(function(self,...)
-		if cGame.PlaceId==1537690962 and options.BeeSwarm and self==hiv then
-			return options.Output("Script attempted to place a basic bee egg, potentially for a fake dupe. Attempt denied.")
-		end
-		if cGame.PlaceId==8737899170 and options.PetSim99 and self==bank99 and checkcaller() then
-			return options.Output("Script attempted to access the bank. Attempt denied.")
-		end
-		return oldd2(self,...)
-	end))
-	function ToString(tbl,level)
-		local tabString = "\t"
-		local tblString = "{\n"..tabString:rep(level)
-		local newLineString = ",\n"..tabString:rep(level)
-		for key,value in pairs(tbl) do 
-			if type(value) == "table" then 
-				tblString = tblString  .. key .. "=" .. ToString(value,level+1)
-			else
-				tblString = tblString  .. key .. "= " .. tostring(value):gsub("\n","") .. newLineString
-			end
-		end
-		return tblString..("\n%s}"):format(tabString:rep(level))
-	end
-	for i,v in next,hrequest do
-		if v then
-			pcall(function()
-				local old6
-				old6=hookfunction(v,function(...)
-					local args={...}
-					if (strFind(args[1].Url,"webhook") or strFind(args[1].Url,"websec")) and options.AntiLog.Enabled then
-						options.Output(("Script attempted to log info%s. Attempt denied. %s\n%s"):format(options.AntiLog.ShowDestination and " at "..args[1].Url or "",options.AntiLog.ShowInfo and "\nLogged info:\n"     ..(args[1].Body and ToString(cGame:GetService("HttpService"):JSONDecode(args[1].Body),1)or "None")or "",options.AntiLog.Payback and not is_sirhurt_closure and "Webhook was deleted." or ""))
-						if options.AntiLog.Payback and not is_sirhurt_closure then
-							args[1].Method="DELETE"
-						else
-							args[1].Url="https://google.com"
-						end
-						return old6(unpack(args))
-					end
-					if strFind(args[1].Url,"rpc") and options.AutoJoin.Enabled then
-						options.Output(("Script attempted to auto join %s. Attempt denied."):format(options.AutoJoin.ShowServer and (args[1].Body and "https://discord.gg/"..cGame:GetService("HttpService"):JSONDecode(args[1].Body).args.code or "nil") or "a server")) 
-						return 
-					end 
-					if strMatch(args[1].Url,"%l+%.roblox%.com/v%d/") and options.AntiApi.Enabled then
-						options.Output(("Script attempted to access the API%s. Attempt denied."):format(options.AntiApi.ShowEndpoint and " at "..args[1].Url or ""))
-						return 
-					end
-					return old6(...)
-				end)
-			end)
-		end
-	end
-        pcall(function()
-	local oldHttpPost
-	oldHttpPost = hookfunction(game.HttpPost, function (...)
-		local args = {...}
-		options.Output("HttpPost request attempted. Attempt denied.")
-		return
-	end)
-        end)
-	old16=hookfunction(Instance.new("TextChannel").SendAsync,newcclosure(function(self,...) 
-		if options.ChatBan.NewChat then
-			options.Output("New chat system message request attempted to fire. Attempt denied.")
-			return
-		end
-		return old16(self,...)
-	end))
-	--[[old3=hookfunction(getrenv().debug.info,function(self,params,...)
-		return options.Require and (self==2 and type(params)=="string" and old3(4,params,...)) or old3(...)
-	end)]]
-	--old4=hookmetamethod(Vector3.new(),"__index",newcclosure(function(self,b,...)
-	--    return options.BasicAntiCheatBypass and not table.find({LocalPlayer.PlayerScripts.PlayerModule.ControlModule,LocalPlayer.PlayerScripts.RbxCharacterSounds},getcallingscript()) and b:lower()=="magnitude" and (old4(self,b,...)<=savedProps.WalkSpeed and old4(self,b,...) or rd(0,savedProps.WalkSpeed)) or old4(self,b,...)
-	--end),false)
-	old14=hookfunction(LocalPlayer.IsInGroup,function(...)
-		local args={...}
-		return options.GroupBypass and (args[1]==LocalPlayer and typeof(args[2])=="number" and args[2]>0 and true) or old14(...)
-	end)
-	--[[old15=hookfunction(LocalPlayer.DistanceFromCharacter,function(...)
-		local args={...}
-		return not checkcaller() and (options.BasicAntiCheatBypass and (args[1]==LocalPlayer and typeof(args[2])=="Vector3" and (old15(...)<savedProps.WalkSpeed and old15(...) or rd(0,savedProps.WalkSpeed)))) or old15(...)
-	end)]]
+}
+local LocalPlayer = game:GetService("Players").LocalPlayer
+if game:GetService("TextChatService").ChatVersion ~= Enum.ChatVersion.TextChatService then
+function makemessage(message)
+    msg = tostring(message)
+    game:GetService("StarterGui"):SetCore(
+        "ChatMakeSystemMessage",
+        {
+            Text = msg,
+            Color = Color3.fromRGB(255, 89, 98),
+            Font = Enum.Font.GothamMedium,
+            FontSize = 16
+        }
+    )
 end
-local a
-if hookmetamethod then
-	old1=hookmetamethod(game,"__namecall",newcclosure(function(self,...)
-		local args={...}
-		local method=string.upper(string.sub(getnamecallmethod(),1,1))..string.sub(getnamecallmethod(),2,#getnamecallmethod())
-		if options.ChatBan.Enabled then
-			if method=="FireServer" and self==SayMessageRequest and getcallingscript()~=ChatMain then
-				options.Output("SayMessageRequest remote event attempted to fire. Attempt denied.")
-				return
-			elseif method=="SendAsync" and self.ClassName=="TextChannel" and options.ChatBan.NewChat then
-				options.Output("New chat system message request attempted to fire. Attempt denied.")
-				return
-			elseif method=="CaptureFocus" and self==ChatBar and options.ChatBan.Slash then
-				options.Output("Chat focus capture as local player was attempted. Attempt denied.")
-				if getcallingscript()~=ChatScript then
-					if not a then
-						StarterGui.SetCore(StarterGui,"SendNotification",{
-							Title="WARNING!",
-							Text="There is an attempt to force you to chat in game."..getcallingscript().GetFullName(getcallingscript()),
-							Button1="Okay!",
-							Duration=15
-						})
-						StarterGui.SetCore(StarterGui,"SendNotification",{
-							Title="What to do",
-							Text="If it is due to a script, rejoin and do not execute it again. Otherwise, go there (through dex) and disable/delete it.",
-							Button1="Okay!",
-							Duration=15
-						})
-						if getcallingscript() then
-							setclipboard(getcallingscript().GetFullName(getcallingscript()))
-							StarterGui.SetCore(StarterGui,"SendNotification",{
-								Title="Copied to clipboard",
-								Text="The path has also been copied to clipboard so you won't lose it in case this warning is gone too fast.",
-								Button1="Okay!",
-								Duration=15
-							})
-						end
-						a="e"
-					end
-				end
-				return
-			elseif method=="Fire" and self==MessagePostedEvent then
-				options.Output("MessagePosted usage was attempted. Attempt denied.")
-				return
-			end
-		end
-		if namecall[self.ClassName] and 
-		namecall[self.ClassName][method] and options.MaliciousNamecalls.Enabled
-		then
-			options.Output(("Malicious namecall%s attempted execution. Attempt denied."):format(options.MaliciousNamecalls.ShowNamecall and " game."..self.GetFullName(self)..":"..method or ""))
-			return not checkcaller() and old1(...)or nil
-		end
-		--[[if not checkcaller() and method=="DistanceFromCharacter" and self==LocalPlayer and typeof(args[1])=="Vector3" and options.BasicAntiCheatBypass then
-			return old1(self,...)<savedProps.WalkSpeed and old1(self,...) or rd(0,savedProps.WalkSpeed)
-		end]]
-		if self==LocalPlayer and method=="Kick" and options.AntiKick then
-			options.Output("Attempt to kick player denied.")
-			return
-		end
-		if self==Stats and method=="GetTotalMemoryUsageMb" and options.MemoryDetections then
-			return rd(400,550)
-		end
-		if self==Content and method=="PreloadAsync" and typeof(args[1])=="table"and  options.GUIDetection then
-			return
-		end
-		if self==LocalPlayer and method=="IsInGroup" and typeof(args[1])=="number" and args[1]>0 and options.GroupBypass then
-			return true
-		end
-		if checkcaller() then
-			if cGame.PlaceId==9551640993 and options.MiningSim and self==tr and method=="FireServer" then
-				options.Output("Script attempted to confirm a potentially rigged/scam trade. Attempt denied.")
-				return
-			--[[elseif cGame.PlaceId==6284583030 and options.PetSim and self==bank and method=="InvokeServer" then
-				local args={...}
-				task.spawn(function()
-					options.Output(("Script attempted to give user named %s (ID: %s) access to your bank. Attempt denied."):format(Players:GetNameFromUserIdAsync(args[1][2]),args[1][2]))
-				end)
-				return ]]
-			elseif cGame.PlaceId==1537690962 and options.BeeSwarm and self==hiv and method=="InvokeServer" then
-				options.Output("Script attempted to place a basic bee egg, potentially a fake dupe. Attempt denied.")
-				return
-			elseif cGame.PlaceId==8737899170 and options.PetSim99 and self==bank99 and method=="InvokeServer" then
-				options.Output("Script attempted to access the bank. Attempt denied.")
-				return
-			end
-		end
-		return old1(self,...)
-	end))
-	if getproperties then
-		repeat task.wait()until #Char:GetChildren()>0
-		for i,v in next,Char:GetChildren() do
-			savedProps[v]={}
-			for i2,v2 in next,getproperties(v) do
-				if typeof(v2)~="Vector3" and typeof(v2)~="CFrame" then
-					savedProps[v][i2]=v2
-				end
-			end
-		end
-		old2=hookmetamethod(game,"__index",newcclosure(function(self,b,...)
-			if not checkcaller() and rawget(savedProps,self) and rawget(rawget(savedProps,self),b) and rawget(options,"BasicAntiCheatBypass") then
-				return rawget(rawget(savedProps,self),b)
-			end
-			return old2(self,b,...)
-		end))
-	end
+function makewarn(message)
+    msg = tostring(message)
+    game:GetService("StarterGui"):SetCore(
+        "ChatMakeSystemMessage",
+        {
+            Text = "[WARN]\n" .. msg,
+            Color = Color3.fromHex("#fdfd96"),
+            Font = Enum.Font.GothamMedium,
+            FontSize = 16
+        }
+    )
 end
-if is_sirhurt_closure then
-    local namecallSirhurt=(function()
-        local actual={}
-        for i,v in next,namecall do
-            for i2,v2 in next,v do
-                table.insert(actual,i.."."..i2)
-            end
-        end
-        return actual
-    end)()
-    for i,v in next, namecallSirhurt do
-        local oldSir
-        oldSir=hookfunction(v:split(".")[1]=="DataModel" and cGame[v:split(".")[2]] or cGame[v:split(".")[1]][v:split(".")[2]],function(...)
-            if options.MaliciousNamecalls.Enabled then
-                options.Output(("Malicious function%s attempted execution. Attempt denied."):format(options.MaliciousNamecalls.ShowNamecall and " game."..(i~="DataModeL"and i.."."..i2) or i2 or "")) 
-                return not checkcaller() and oldSir(...)or nil
-            end
-            return oldSir(...)
-        end)
-    end
-    
+function makeerror(message)
+    msg = tostring(message)
+    game:GetService("StarterGui"):SetCore(
+        "ChatMakeSystemMessage",
+        {
+            Text = "[ERROR]\n" .. msg,
+            Color = Color3.fromRGB(125, 12, 23),
+            Font = Enum.Font.GothamMedium,
+            FontSize = 16
+        }
+    )
 end
-
-if options.ClearTrace then
-    for i,v in next,getgc()do
-        if typeof(v)=="function" and execlosure(v) then
-            v=nil
-        end
+ChatBar = LocalPlayer.PlayerGui.Chat.Frame.ChatBarParentFrame.Frame.BoxFrame.Frame.ChatBar
+ChatMain = LocalPlayer.PlayerScripts.ChatScript.ChatMain
+local s, e = pcall(function()
+ SMR = game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest
+end)
+if not s then
+ warn("SayMessageRequest was not found! Please send a message in chat so SayMessageRequest can be found.")
+end
+lastText = ""
+ChatBar.Focused:Connect(function()
+ repeat lastText = ChatBar.Text task.wait() until not ChatBar.Focused
+end)
+else
+ function makemessage(msg)
+    msg = tostring(msg)
+    if game:GetService("TextChatService").TextChannels:FindFirstChild("RBXGeneral") then
+        game:GetService("TextChatService").TextChannels:FindFirstChild("RBXGeneral"):DisplaySystemMessage(msg)
     end
 end
+function makewarn(msg)
+    msg = tostring(msg)
+    if game:GetService("TextChatService").TextChannels:FindFirstChild("RBXGeneral") then
+        game:GetService("TextChatService").TextChannels:FindFirstChild("RBXGeneral"):DisplaySystemMessage(
+            "[WARN] " .. msg
+        )
+    end
+end
+function makeerror(msg)
+    makeMessage("[ERROR]\n" .. msg)
+end
+end
+local hookf = assert(hookfunction, "Your executor does not support a required function, Please consider getting a new executor, DO NOT CONSIDER THIS SCRIPT EXECUTED.")
+local keyp = assert(keypress, "Your executor does not support the keypress function.")
+hookf(warn, newcclosure(function(...)
+local c = ""
+for i, v in {...} do c = c .. " " .. tostring(v) end
+makewarn(c)
+end))
+hookf(error, newcclosure(function(...)
+local c = ""
+for i, v in {...} do c = c .. " "  .. tostring(v) end
+makeerror(c)
+end))
+makemessage("RoTotal loaded.")
+local old;
+old = hookmetamethod(game,"__namecall",newcclosure(function(Self,...)
+local Args = {...}
+local method = getnamecallmethod()
+if method:lower():sub(1, 6) == "prompt" and not RoTotal.MarketplaceService.PromptPurchases then
+if RoTotal.MarketplaceService.ShowCreators then
+local creator = game:GetService("MarketplaceService"):GetProductInfo(Args[2]).Creator.CreatorTargetId
+e = string.format("/Extra Information\\\nCreator: @%s\nCreator ID: %d", game:GetService("Players"):GetNameFromUserIdAsync(creator), creator)
+end
+return warn(
+string.format(
+ "%s called %s (robux stealing method), Attempt denied.\n%s", getcallingscript():GetFullName(), method, e
+)
+)
+elseif method:lower() == ("performpurchase" or "performpurchasev2") and Self == game:GetService("MarketplaceService") then
+local creator = game:GetService("MarketplaceService"):GetProductInfo(Args[2]).Creator.CreatorTargetId
+local f = string.format("/Extra Information\\\nCreator: @%s\nCreator ID: %d", game:GetService("Players"):GetNameFromUserIdAsync(creator), creator)
+if not RoTotal.MarketplaceService.Robux.PerformPurchases then
+return warn(string.format("Script called %s (Force-Buying a product), Product ID: %d Attempt denied.\n%s", method, Args[2], f))
+else
+warn("Script force-bought a product, Attempt successfully as PerformPurchases is set to true\n%s", f)
+end
+elseif method == "GetRobuxBalance" and Self == game:GetService("MarketplaceService") then
+if not RoTotal.MarketplaceService.Robux.GetRobuxBalance then
+ return warn(string.format("%s called GetRobuxBalance on %s, Attempt denied.", getcallingscript():GetFullName(), Args[1].Name))
+else
+ warn("%s called GetRobuxBalance on user %s, Attempt successful.", getcallingscript():GetFullName(), Args[1].Name)
+end
+end
+if method:sub(1,8) == "HttpPost" and not RoTotal.HttpPost.Allowed then
+WHITE_LISTED = false
+local s = ""
+if type(Args[2]) == "table" then
+for i, v in Args[2] do
+ if type(v) == "table" then
+  for _, c in v do s = s .. tostring(_)..": " .. tostring(c) .."\n" end
+ end
+end
+else
+s = Args[2]
+end
+for i, v in RoTotal.HttpPost.WhitelistedURLs do
+if Args[1]:gsub("https://", ""):find(v:gsub("https://","")) then
+WHITE_LISTED = true
+end
+end
+if not WHITE_LISTED then
+return warn(
+string.format(
+"%s tried to HttpPost to the following URL: %s, Post data:\n%s\nAttempt denied as URL was found not whitelisted",
+getcallingscript():GetFullName(), Args[1], s
+)
+)
+end
+elseif method:sub(1,8) == "HttpPost" and RoTotal.HttpPost.Allowed then
+BLACK_LISTED0 = false
+for i, v in RoTotal.HttpPost.BlacklistedURLs do
+if Args[1]:find(v) then
+BLACK_LISTED0 = true
+end
+end
+local s = "Headers:\n"
+for i, v in Args[3] do
+ if type(v) == "table" then
+  for _, c in v do s = s .. tostring(_)..": " .. tostring(c) .."\n" end
+ end
+end
+ if BLACK_LISTED0 then
+ return warn(string.format("%s called HttpPost with URL %s but the URL was found blacklisted, Post data:\n%s\n%s", getcallingscript():GetFullName(), Args[1], Args[2], s))
+ end
+elseif method:sub(1,7) == "HttpGet" then
+WHITE_LISTED1 = false
+BLACK_LISTED1 = false
+if RoTotal.HttpGet.Allowed then
+for i, v in RoTotal.HttpGet.BlacklistedURLs do
+if Args[1]:gsub("https://",""):find(v:gsub("https://","")) then BLACK_LISTED1 = true
+end
+end
+for i, v in RoTotal.HttpGet.WhitelistedURLs do
+if Args[1]:gsub("https://", ""):find(v:gsub("https://", "")) then WHITE_LISTED1 = true end
+end
+if BLACK_LISTED1 or not WHITE_LISTED1 then return warn(string.format("%s Tried to send a HttpGet request to the URL %s, URL was found in the blacklisted urls table.", getcallingscript():GetFullName(), Args[1]))
+end
+else
+for i, v in RoTotal.HttpGet.WhitelistedURLs do
+if Args[1]:gsub("https://",""):find(v:gsub("https://","")) then WHITE_LISTED1 = true end
+end
+if not WHITE_LISTED1 then
+return warn(string.format("%s Tried to send an HttpGet request to the URL %s, But the URL was not found in the whitelisted URLs table, the attempt was denied.", getcallingscript():GetFullName(), Args[1]))
+end
+end
+elseif method == "SendAsync" and Self:IsA("TextChannel") then
+BLACK_LISTED2 = false
+BLACKLISTEDWORD = ""
+if not RoTotal.Chat.SendAsync.Allowed then return warn(
+getcallingscript():GetFullName(), "Tried to call SendAsync with the text",Args[1],"but SendAsync is not allowed, Attempt denied."
+) end
+if RoTotal.Chat.SendAsync.Allowed then
+for i, v in RoTotal.Chat.SendAsync.BlacklistedWords do
+if Args[1]:find(v) then BLACK_LISTED2 = true BLACKLISTEDWORD = v end
+end
+if BLACK_LISTED2 then
+return warn(
+string.format(
+"%s Tried to SendAsync with the blacklisted word %s!\nAttempt denied.", getcallingscript():GetFullName(), BLACKLISTEDWORD  
+)
+)
+end
+end
+elseif Self == SMR and Args[1] ~= lastText then
+BLACK_LISTED3 = false
+if RoTotal.Chat.SayMessageRequest.Allowed then
+for i, v in RoTotal.Chat.SayMessageRequest.BlacklistedWords do
+if Args[1]:find(v) then
+ BLACK_LISTED3 = true
+ BLACKLISTEDWORD2 = v
+end
+end
+if BLACK_LISTED3 then
+return warn(
+ string.format(
+ "%s Fired SayMessageRequest with a blacklisted message (%s), the blacklisted word that blocked the message was '%s'\nChannel: %s.", getcallingscript():GetFullName(), Args[1], BLACKLISTEDWORD2, Args[2])
+)
+end
+else
+return warn(
+ string.format(
+ "%s Tried to fire SayMessageRequest with the message %s, in channel %s.\nIf you think this message would not get you banned go ahead and allow SayMessageRequest.Allowed, Otherwise keep it off and add this message to the BlacklistedWords table.", getcallingscript():GetFullName(), Args[1], Args[2]
+ )
+)
+end
+elseif method == 'FireServer' and lastText == Args[1] and getcallingscript() == ChatMain then
+SMR = Self
+warn("SayMessageRequest has been found!\nYou will no longer have to worry about chat bans.")
+elseif method == 'GetClientId' then
+return warn(string.format("%s Tried to get your Hardware-ID attempt denied; Please do not re-execute the last script", getcallingscript():GetFullName()))
+elseif method == "Kick" and Self == game:GetService("Players").LocalPlayer then
+return warn("Script tried to kick LocalPlayer, Attempt denied\nNote: ",Args[1])
+elseif method == "ReportAbuse" and Self:IsA("Player") then
+return warn(string.format("%s tried to ReportAbuse user %s, Attempt denied.", getcallingscript():GetFullName(), Self.Name))
+elseif method == "PreloadAsync" and Self == game:GetService("ContentProvider") then
+if RoTotal.BasicAnticheat.Bypass then
+if RoTotal.BasicAnticheat.DestroyWhenCalled then
+getcallingscript():Destroy()
+end
+return warn("PreloadAsync was called, Attempt denied.")
+elseif method == 'GetTotalMemoryUsageMb' and Self == game:GetService("Stats") and RoTotal.BasicAnticheat.Bypass then if RoTotal.BasicAnticheat.DestroyWhenCalled then getcallingscript():Destroy() end
+local num = math.random(380,500) 
+warn("A script called GetTotalMemoryUsageMb, (Anticheat) returned " .. tostring(num) .. "megabytes") return num end -- Used to check how many megabytes the game is using, if its alot then user is exploiting, We return a number from 380 to 500 to make sure the game does not know because thats the average roblox regular client usage.
+end
+return old(Self,...)
+end))
+local r = (syn and syn.request) or (fluxus and fluxus.request) or Request or request
+function extra(str)
+local str2 = str:sub(2, #str):lower()
+return str:sub(1,1)..str2
+end
+hookf(r, function(args)
+if args.Method == "GET" then
+if RoTotal.HttpGet.Allowed then
+for i, v in RoTotal.HttpGet.BlacklistedURLs do
+if args.Url:find(v) then
+return warn(
+ string.format(
+   "%s called HttpGet with a blacklisted URL (%s), Attempt denied.", getcallingscript():GetFullName(), args.Url))
+end
+end
+else
+local a = false
+for i, v in RoTotal.HttpGet.WhitelistedURLs do
+ if args.Url:find(v) then a = true end
+end
+if not a then
+return warn(string.format("%s called HttpGet with a non-whitelisted URL (%s), Attempt denied.", getcallingscript():GetFullName(), args.Url))
+else
+local b;
+local s, e = pcall(function()
+ b = game:HttpGet(args.Url)
+end)
+return {Body = b, Success = s, Cookies={}, Headers={["Content-Length"] = #b, ["Content-Type"]="text/html"}} -- Return a table of nothing as the headers and cookies for protection. (totally not because i dont know what to do)
+end
+end
+elseif args.Method == "POST" then
+return game:HttpPost(args.Url, args.Body, args.Headers)
+elseif args.Method == "HEAD" then
+game:HttpGet(args.Url)
+return
+elseif args.Method == "DELETE" then
+return
+end
+end)
