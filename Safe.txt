@@ -13,8 +13,10 @@ local RoTotal = {
     ["WhitelistedURLs"] = {
         "MobileKeyboard",
         "https://scriptblox.com",
-        "https://raw.githubuserconcent.com",
-        "https://github.com"
+        "https://raw.githubusercontent.com",
+        "https://github.com", 
+        "pastebin.com", 
+        "pastefy.com"
     -- Add URLs in this if you want to turn HttpGet off but you want to loadstring something.
     }
 },
